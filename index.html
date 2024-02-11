@@ -151,8 +151,13 @@
         let nodesCreatedCount = 1; // Start with 1 node (root)
         let nodesVisitedCount = 0; // Start with 0 because did not visit the root yet
         let currentStateElement = document.getElementById("current-state");
+        let paused = false;
 
         function exploreState() {
+            if (paused) {
+                return; // If paused, do not explore the next state
+            }
+
             if (queue.length === 0) {
                 // All states explored, stop the process
                 clearInterval(intervalId);
@@ -187,6 +192,11 @@
 
         // Set up a timer to explore states one by one
         let intervalId = setInterval(exploreState, 1000); // Change the interval (in milliseconds) as desired
+
+        // Pause exploration when the document is clicked
+        document.addEventListener("click", function() {
+            paused = !paused;
+        });
 
         return { solutions, nodesCreatedCount, nodesVisitedCount };
     }
