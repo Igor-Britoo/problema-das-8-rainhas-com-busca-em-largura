@@ -1,220 +1,279 @@
-<!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>8 Queens Problem</title>
-<style>
-    .chessboard {
-        border-collapse: collapse;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <title>Problema das 8 rainhas - Busca em largura</title>
+    
+    <style>
+        body {
+            background-color: #373F51;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            padding: 50px 0;
+            font-family: 'Montserrat', sans-serif;
+        }
 
-    .chessboard td {
-        width: 50px;
-        height: 50px;
-        border: 1px solid black;
-        text-align: center;
-    }
+        .title, .subtitle {
+            font-size: 48px;
+            font-weight: bold;
+            color: #fff;
+            margin: 0;
+            text-align: center;
+        }
 
-    .queen {
-        font-size: 30px;
-    }
+        .subtitle {
+            color: #C9C9C9;
+            margin-bottom: 64px;
+        }
 
-    .attacked {
-        background-color: #ff9999; /* Light red */
-    }
+        .display-none {
+            display: none;
+        }
+        
+        .container {
+            display: flex;
+            width: 100%;
+            gap: 200px;
+            align-items: center;
+            justify-content: center;
+        }
 
-    #current-state {
-        margin-top: 20px;
-    }
-</style>
+        .chessboard {
+            border-collapse: collapse;
+            background-color: #fff;
+        }
+
+        .chessboard td {
+            width: 64px;
+            height: 64px;
+            border: 2px solid black;
+            text-align: center;
+        }
+
+        .queen {
+            font-size: 32px;
+        }
+
+        .attacked {
+            background-color: #ff9999; /* Light red */
+        }
+
+        .status-container {
+            width: 450px;
+            height: 480px;
+            background-color: #D9D9D9;
+            border-radius: 25px;
+            padding: 20px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            justify-content: center;
+        }
+
+        label {
+            font-size: 32px;
+            color: #403F4C;
+        }
+
+        #current-state, #nodes-created, #nodes-visited {
+            font-size: 32px;
+            background-color: #fff;
+            width: 100%;
+            border-radius: 16px;
+            padding: 12px 0px;
+            text-align: center;
+            margin-top: 16px;
+        }
+    </style>
 </head>
 <body>
-<h1>8 Queens Problem</h1>
-<table class="chessboard">
-    <tbody id="chessboard">
-        <!-- The chessboard will be generated dynamically using JavaScript -->
-    </tbody>
-</table>
-<div id="current-state"></div>
+    <h1 class="title">Problema das 8 rainhas</h1>
+    <h2 class="subtitle">Busca em largura</h2>
 
-<script>
-    class ChessBoard {
-        constructor() {
-            this.matrix = this.initializeBoard();
-        }
+    <div class="container">
+        <table class="chessboard">
+            <tbody id="chessboard">
+                <!-- The chessboard will be generated dynamically using JavaScript -->
+            </tbody>
+        </table>
 
-        initializeBoard() {
-            let matrix = [];
-            for (let i = 0; i < 8; i++) {
-                let row = [];
-                for (let j = 0; j < 8; j++) {
-                    row.push('');
-                }
-                matrix.push(row);
+        <div class="status-container">
+            <div>
+                <label for="current-state">Estado atual:</label>
+                <div id="current-state"></div>
+            </div>
+            <div>
+                <label for="current-state">Qtde de nós criados:</label>
+                <div id="nodes-created"></div>
+            </div>
+            <div>
+                <label for="current-state">Qtde de nós visitados:</label>
+                <div id="nodes-visited"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ChessBoard {
+            constructor() {
+                this.matrix = this.initializeBoard();
             }
-            return matrix;
-        }
 
-        printBoard() {
-            let chessboard = document.getElementById("chessboard");
-            chessboard.innerHTML = ""; // Clear previous content
-            for (let i = 0; i < 8; i++) {
-                let row = document.createElement("tr");
-                for (let j = 0; j < 8; j++) {
-                    let cell = document.createElement("td");
-                    cell.textContent = this.matrix[i][j];
-                    if (this.matrix[i][j] === 'Q') {
-                        cell.classList.add('queen');
-                    } else if (this.matrix[i][j] === 'X') {
-                        cell.classList.add('attacked');
+            initializeBoard() {
+                let matrix = [];
+                for (let i = 0; i < 8; i++) {
+                    let row = [];
+                    for (let j = 0; j < 8; j++) {
+                        row.push('');
                     }
-                    row.appendChild(cell);
+                    matrix.push(row);
                 }
-                chessboard.appendChild(row);
-            }
-        }
-
-        markAttackedPositions(row, column) {
-            // Mark horizontally and vertically
-            for (let i = 0; i < 8; i++) {
-                this.matrix[row][i] = 'X';
-                this.matrix[i][column] = 'X';
+                return matrix;
             }
 
-            // Mark diagonally (up-right direction)
-            for (let i = row - 1, j = column + 1; i >= 0 && j < 8; i--, j++) {
-                this.matrix[i][j] = 'X';
-            }
-
-            // Mark diagonally (down-right direction)
-            for (let i = row + 1, j = column + 1; i < 8 && j < 8; i++, j++) {
-                this.matrix[i][j] = 'X';
-            }
-
-            // Mark diagonally (up-left direction)
-            for (let i = row - 1, j = column - 1; i >= 0 && j >= 0; i--, j--) {
-                this.matrix[i][j] = 'X';
-            }
-
-            // Mark diagonally (down-left direction)
-            for (let i = row + 1, j = column - 1; i < 8 && j >= 0; i++, j--) {
-                this.matrix[i][j] = 'X';
-            }
-        }
-
-        isPositionAvailable(row, column) {
-            if (this.matrix[row][column] === 'X' || this.matrix[row][column] === 'Q') {
-                return false;
-            }
-            return true;
-        }
-
-        insertQueen(row, column) {
-            if (
-                column >= 0 &&
-                column <= 7 &&
-                row >= 0 &&
-                row <= 7 &&
-                this.isPositionAvailable(row, column)
-            ) {
-                this.markAttackedPositions(row, column);
-                this.matrix[row][column] = 'Q';
-            } else {
-                //console.log('Invalid position');
-            }
-        }
-
-        getAvailablePositionsAtRow(rowNumber) {
-            let availablePositions = [];
-            for (let i = 0; i < 8; i++) {
-                if (this.isPositionAvailable(rowNumber, i)) {
-                    availablePositions.push(i);
+            printBoard() {
+                let chessboard = document.getElementById("chessboard");
+                chessboard.innerHTML = ""; // Clear previous content
+                for (let i = 0; i < 8; i++) {
+                    let row = document.createElement("tr");
+                    for (let j = 0; j < 8; j++) {
+                        let cell = document.createElement("td");
+                        cell.textContent = this.matrix[i][j];
+                        if (this.matrix[i][j] === '♛') {
+                            cell.classList.add('queen');
+                        } else if (this.matrix[i][j] === 'X') {
+                            cell.classList.add('attacked');
+                        }
+                        row.appendChild(cell);
+                    }
+                    chessboard.appendChild(row);
                 }
             }
-            return availablePositions;
-        }
 
-        insertQueenByRowPositionList(rowPositionList) {
-            let columnPosition = 0;
-            for (let rowPosition of rowPositionList) {
-                this.insertQueen(columnPosition, rowPosition);
-                columnPosition += 1;
-            }
-        }
-    }
+            markAttackedPositions(row, column) {
+                // Mark horizontally and vertically
+                for (let i = 0; i < 8; i++) {
+                    this.matrix[row][i] = 'X';
+                    this.matrix[i][column] = 'X';
+                }
 
-    // Define BFS function to solve the 8 queens problem
-    function bfs() {
-        let queue = [[]]; // Start with an empty state (root node)
-        let solutions = [];
-        let nodesCreatedCount = 1; // Start with 1 node (root)
-        let nodesVisitedCount = 0; // Start with 0 because did not visit the root yet
-        let currentStateElement = document.getElementById("current-state");
-        let paused = false;
+                // Mark diagonally (up-right direction)
+                for (let i = row - 1, j = column + 1; i >= 0 && j < 8; i--, j++) {
+                    this.matrix[i][j] = 'X';
+                }
 
-        function exploreState() {
-            if (paused) {
-                return; // If paused, do not explore the next state
-            }
+                // Mark diagonally (down-right direction)
+                for (let i = row + 1, j = column + 1; i < 8 && j < 8; i++, j++) {
+                    this.matrix[i][j] = 'X';
+                }
 
-            if (queue.length === 0) {
-                // All states explored, stop the process
-                clearInterval(intervalId);
-                return;
+                // Mark diagonally (up-left direction)
+                for (let i = row - 1, j = column - 1; i >= 0 && j >= 0; i--, j--) {
+                    this.matrix[i][j] = 'X';
+                }
+
+                // Mark diagonally (down-left direction)
+                for (let i = row + 1, j = column - 1; i < 8 && j >= 0; i++, j--) {
+                    this.matrix[i][j] = 'X';
+                }
             }
 
-            let currentState = queue.shift(); // Take the first state from the queue
-            let currentRow = currentState.length;
-            nodesVisitedCount++;
+            isPositionAvailable(row, column) {
+                if (this.matrix[row][column] === 'X' || this.matrix[row][column] === '♛') {
+                    return false;
+                }
+                return true;
+            }
 
-            currentStateElement.textContent = `Exploring state: [${currentState}]`; // Display the state being explored
+            insertQueen(row, column) {
+                if (
+                    column >= 0 &&
+                    column <= 7 &&
+                    row >= 0 &&
+                    row <= 7 &&
+                    this.isPositionAvailable(row, column)
+                ) {
+                    this.markAttackedPositions(row, column);
+                    this.matrix[row][column] = '♛';
+                } else {
+                    //console.log('Invalid position');
+                }
+            }
 
-            // Get available positions for the current state and row
-            let board = new ChessBoard();
-            board.insertQueenByRowPositionList(currentState);
-            board.printBoard(); // Display the current state on the chessboard
+            getAvailablePositionsAtRow(rowNumber) {
+                let availablePositions = [];
+                for (let i = 0; i < 8; i++) {
+                    if (this.isPositionAvailable(rowNumber, i)) {
+                        availablePositions.push(i);
+                    }
+                }
+                return availablePositions;
+            }
 
-            if (currentRow === 8) {
-                // If we've placed 8 queens, it's a solution
-                solutions.push(currentState);
-            } else {
-                // For each available position, add it to the current state and enqueue
-                let availablePositions = board.getAvailablePositionsAtRow(currentRow);
-                for (let position of availablePositions) {
-                    let newState = currentState.slice(); // Copy the current state
-                    newState.push(position); // Add the new queen position
-                    queue.push(newState); // Enqueue the new state
-                    nodesCreatedCount++;
+            insertQueenByRowPositionList(rowPositionList) {
+                let columnPosition = 0;
+                for (let rowPosition of rowPositionList) {
+                    this.insertQueen(columnPosition, rowPosition);
+                    columnPosition += 1;
                 }
             }
         }
+        
+        // Define BFS function to solve the 8 queens problem
+        function bfs() {
+            let queue = [[]]; // Start with an empty state (root node)
+            let solutions = [];
+            let nodesCreatedCount = 1; // Start with 1 node (root)
+            let nodesVisitedCount = 0; // Start with 0 because did not visit the root yet
+            let currentStateElement = document.getElementById("current-state");
+            let nodesCreatedElement = document.getElementById("nodes-created");
+            let nodesVisitedElement = document.getElementById("nodes-visited");
+            
+            function exploreState() {
+                let currentState = queue.shift(); // Take the first state from the queue
+                let currentRow = currentState.length;
+                nodesVisitedCount++;
 
-        // Set up a timer to explore states one by one
-        let intervalId = setInterval(exploreState, 1000); // Change the interval (in milliseconds) as desired
+                currentStateElement.textContent = `[${currentState}]`; // Display the state being explored
+                nodesCreatedElement.textContent = `${nodesCreatedCount}`; // Display the state being explored
+                nodesVisitedElement.textContent = `${nodesVisitedCount}`; // Display the state being explored
 
-        // Pause exploration when the document is clicked
-        document.addEventListener("click", function() {
-            paused = !paused;
-        });
+                // Get available positions for the current state and row
+                let board = new ChessBoard();
+                board.insertQueenByRowPositionList(currentState);
+                board.printBoard(); // Display the current state on the chessboard
 
-        return { solutions, nodesCreatedCount, nodesVisitedCount };
-    }
+                if (currentRow === 8) {
+                    // If we've placed 8 queens, it's a solution
+                    solutions.push(currentState);
+                    clearInterval(intervalId);
+                    return
+                } else {
+                    // For each available position, add it to the current state and enqueue
+                    let availablePositions = board.getAvailablePositionsAtRow(currentRow);
+                    for (let position of availablePositions) {
+                        let newState = currentState.slice(); // Copy the current state
+                        newState.push(position); // Add the new queen position
+                        queue.push(newState); // Enqueue the new state
+                        nodesCreatedCount++;
+                    }
+                }
+            }
 
-    // Call BFS function and print solutions
-    let { solutions, nodesCreatedCount, nodesVisitedCount } = bfs();
-    /*
-    console.log("Number of solutions: " + solutions.length);
-    console.log("Number of nodes created: " + nodesCreatedCount);
-    console.log("Number of nodes visited: " + nodesVisitedCount + '\n');
-    */
-    for (let solution of solutions) {
-        let board = new ChessBoard();
-        board.insertQueenByRowPositionList(solution);
-        //console.log("Exploring solution:", solution);
-        board.printBoard();
-        //console.log();
-    }
-</script>
+            // Set up a timer to explore states one by one
+            let intervalId = setInterval(exploreState, 1000); // Change the interval (in milliseconds) as desired
+
+            return { solutions, nodesCreatedCount, nodesVisitedCount };
+        }
+
+        board = new ChessBoard()
+        board.printBoard()
+
+        bfs()
+    </script>
 </body>
 </html>
